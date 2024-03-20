@@ -9,7 +9,9 @@ Para preparar e executar este projeto, siga as instruções abaixo.
 
 ### Requisitos
 
-É necessário ter Python instalado em sua máquina.
+É necessário ter Python e pip instalados em sua máquina.
+
+**Nota:** pip é o gerenciador de pacotes para Python e geralmente vem instalado com o Python. Se você precisar instalar ou atualizar o pip, consulte a [documentação oficial do pip](https://pip.pypa.io/en/stable/installing/).
 
 ### Configuração do Ambiente
 
@@ -62,7 +64,7 @@ Siga as instruções na tela para interagir com a aplicação.
 
 | Nome                          | E-mail                |
 | ----------------------------- | --------------------- |
-| Rita de Kássia Lemos Pereira  | rklp@ic.ufal.br       |
+| Rita de Kassia Lemos Pereira  | rklp@ic.ufal.br       |
 | Higor de Lima Gomes           | hlg@ic.ufal.br        |
 | Guilherme Oliveira Silva Gomes| gosg@ic.ufal.br       |
 | José Anderson da Silva        | jandersons@ic.ufal.br |
