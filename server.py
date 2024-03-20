@@ -75,8 +75,7 @@ def handle_client(client_socket):
             c.send(game_on.encode('utf-8'))
     vez = 0
 
-    ativo = True
-    while ativo:
+    while True:
         try:
             message = client_socket.recv(1024).decode('utf-8')
             message = message.split(':')
@@ -107,7 +106,6 @@ def handle_client(client_socket):
                     print(f"Win: {winner}")
                     c.send(f'Winner:{winner}'.encode('utf-8'))
                     time.sleep(0.1)
-                ativo = False
         except:
             clients.remove(client_socket)
             break

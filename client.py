@@ -1,7 +1,7 @@
 import socket
 import threading
 import pygame
-from pgu import gui
+import select
 
 MARROM = (84, 38, 6)
 BEJE = (222, 184, 129)
@@ -18,6 +18,7 @@ WIN = 0
 jogador = 0
 tela = None
 jogo_ativo = False
+recebendo_ativo = True
 obrigatorio = {
     'estado': False,
     'pos': [],
@@ -71,26 +72,6 @@ mapa = [
     [2, 0, 2, 0, 2, 0, 2, 0]
 ]
 
-# Class widget or pop-up window
-class POPDialog(gui.Dialog):
-    def __init__(self, value, **params):
-        title = gui.Label("Vencedor")
-        main = gui.Table(width=100, height=70)
-        label = gui.Label(value)
-        btn = gui.Button("Encerrar")
-        btn.connect(gui.CLICK, self.encerrar_jogo, None)
-        main.tr()
-        main.td(label)
-        main.tr()
-        main.tr()
-        main.td(btn)
-        gui.Dialog.__init__(self, title, main)
-
-    def encerrar_jogo(self):
-        global jogo_ativo
-        self.close()
-        jogo_ativo = False
-
 HOST = 'localhost'
 PORT = 5001
 
@@ -99,9 +80,18 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((HOST, PORT))
 
 def receive_data():
-    global cor, game_on, vez, jogador
-    while True:
-        response = client_socket.recv(1024).decode('utf-8')
+    global cor, game_on, vez, jogador, WIN, recebendo_ativo
+    client_socket.setblocking(0)
+
+    while recebendo_ativo:
+        try:
+            response = client_socket.recv(1024).decode('utf-8')
+        except BlockingIOError:
+            continue
+        except Exception as e:
+            print(f"Erro ao receber dados: {e}")
+            break
+
         response = response.split(':')
 
         if response[0] == 'GameOn':
@@ -117,28 +107,27 @@ def receive_data():
                 for col in range(8):
                     mapa[row][col] = int(response[1][row*8 + col])
         elif response[0] == 'Winner':
-            print(response[1])
             WIN = int(response[1])
             if WIN != 0:
                 anunciar_ganhador()
+    client_socket.close()
+
+def draw_popup(message):
+    font = pygame.font.Font(None, 40)
+    text_surface = font.render(message, True, (0, 0, 0))
+    width = 300
+    height = 200
+    rect = pygame.Rect(200, 200, width, height)
+    color = (255, 255, 255)
+    pygame.draw.rect(tela, color, rect)
+    text_rect = text_surface.get_rect(center=rect.center)
+    tela.blit(text_surface, text_rect)
 
 def anunciar_ganhador():
-    dialog = None
-    print(f"Win: {WIN}")
     if WIN == jogador:
-        dialog = POPDialog("Você venceu!")
-        print("Você venceu!")
+        draw_popup("Você venceu!")
     else:
-        dialog = POPDialog("Você perdeu!")
-        print("Você perdeu!")
-    dialog.open()
-
-    # client_socket.close()
-
-def render_text(text, color, x, y):
-    font = pygame.font.Font(None, 36)
-    text_surface = font.render(text, True, color)
-    tela.blit(text_surface, (x, y))
+        draw_popup("Você perdeu!")
 
 def send_data(continua):
     if continua:
@@ -545,7 +534,7 @@ def movimento(tela):
                 att_jogador(row, col, False, 0, True)
 
 def jogo():
-    global vez, clicked, pos_dama, game_on, tela, jogo_ativo
+    global vez, clicked, pos_dama, game_on, tela, jogo_ativo, recebendo_ativo
     #init pygame
     pygame.init()
 
@@ -559,10 +548,11 @@ def jogo():
     while jogo_ativo:
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
+                recebendo_ativo = False
+                print(recebendo_ativo)
                 jogo_ativo = False
-            if game_on and vez:
-                if evento.type == pygame.MOUSEBUTTONDOWN:
-                    movimento(tela)
+            if game_on and vez and evento.type == pygame.MOUSEBUTTONDOWN:
+                movimento(tela)
 
         tela.fill(AZUL_CLARO)
 
@@ -588,13 +578,13 @@ def jogo():
 
         tela.blit(player_surface, (655, 10))
         tela.blit(text_surface, (622, 270))
-        
+
         pygame.display.update()
     pygame.quit()
 
 # Cria as threads para receber e enviar dados
-receive_thread = threading.Thread(target = receive_data)
 game_thread = threading.Thread(target = jogo)
+receive_thread = threading.Thread(target = receive_data)
 
 # Inicia as threads
 receive_thread.start()
